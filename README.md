@@ -27,14 +27,14 @@ A REST API receives a conjunction assessment request for two space objects.
 ## Minimal functional requirements
 
 * POST /assessments
-  * Accepts two object IDs + time window
-  * Returns an assessmentId immediately
+    * Accepts two object IDs + time window
+    * Returns an assessmentId immediately
 * Async background task
-  * Simulates orbit propagation + miss-distance computation
-  * Takes several seconds
+    * Simulates orbit propagation + miss-distance computation
+    * Takes several seconds
 * GET /assessments/{id}
-  * Returns status: PENDING | RUNNING | COMPLETED | FAILED
-  * Includes collision probability when done
+    * Returns status: PENDING | RUNNING | COMPLETED | FAILED
+    * Includes collision probability when done
 
 ## High-level architecture
 
@@ -59,13 +59,15 @@ public record ConjunctionAssessment(
         String secondaryObjectId,
         AssessmentStatus status,
         Double collisionProbability
-) {}
+) {
+}
 
 ````
 
 ## Async executor configuration
 
 ````java
+
 @Configuration
 @EnableAsync
 public class AsyncConfig {
@@ -87,6 +89,7 @@ public class AsyncConfig {
 ## Async computation service (SSA flavor)
 
 ````java
+
 @Service
 public class ConjunctionComputationService {
 
@@ -113,6 +116,7 @@ public class ConjunctionComputationService {
 ## Orchestration service
 
 ````java
+
 @Service
 public class AssessmentService {
 
@@ -130,15 +134,15 @@ public class AssessmentService {
                 id, objA, objB, AssessmentStatus.PENDING, null));
 
         computationService.computeCollisionProbability()
-            .thenAccept(prob -> store.put(id,
-                new ConjunctionAssessment(id, objA, objB,
-                        AssessmentStatus.COMPLETED, prob)))
-            .exceptionally(ex -> {
-                store.put(id,
-                    new ConjunctionAssessment(id, objA, objB,
-                            AssessmentStatus.FAILED, null));
-                return null;
-            });
+                .thenAccept(prob -> store.put(id,
+                        new ConjunctionAssessment(id, objA, objB,
+                                AssessmentStatus.COMPLETED, prob)))
+                .exceptionally(ex -> {
+                    store.put(id,
+                            new ConjunctionAssessment(id, objA, objB,
+                                    AssessmentStatus.FAILED, null));
+                    return null;
+                });
 
         return id;
     }
@@ -152,6 +156,7 @@ public class AssessmentService {
 ## REST controller
 
 ````java
+
 @RestController
 @RequestMapping("/api/assessments")
 public class AssessmentController {
@@ -178,21 +183,35 @@ public class AssessmentController {
 }
 ````
 
-# Why this fits SSA / STM / FD / STC well
+## Why this fits SSA / STM / FD / STC well
 
 * Asynchronous by nature (no blocking during propagation)
 * Mirrors real conjunction screening workflows
 * Conservative polling model (common in ops systems)
 * Clean separation of command vs query
 * Easy to evolve toward:
-  * maneuver planning (FD),
-  * priority queues (STC),
-  * message-driven pipelines (STM)
+    * maneuver planning (FD),
+    * priority queues (STC),
+    * message-driven pipelines (STM)
 
-# Natural extensions (realistic next steps)
+## Natural extensions (realistic next steps)
 
 * Time-window parameterization
 * Priority levels (human-in-the-loop STC)
 * Rate limiting per operator
 * Replace in-memory store with PostgreSQL
 * Event emission on high-risk conjunctions
+
+## ThreadPoolTaskExecutor vs Virtual Threads
+
+| Aspect         | ThreadPoolTaskExecutor | Virtual Threads                  |
+|----------------|------------------------|----------------------------------|
+| Thread type    | Platform (OS) threads  | Virtual (JVM-managed)            |
+| Creation cost  | High                   | Very low                         |
+| Blocking calls | Dangerous              | Safe                             |
+| Pool sizing    | Critical               | Usually unnecessary              |
+| Back-pressure  | Manual                 | Via structured concurrency       |
+| Debugging      | Familiar               | Slightly new, improving          |
+| Legacy libs    | Fully compatible       | Mostly compatible (some caveats) |
+
+ThreadPoolTaskExecutor is preferable in this project due to the assumption on CPU-bounding computation for the probability.

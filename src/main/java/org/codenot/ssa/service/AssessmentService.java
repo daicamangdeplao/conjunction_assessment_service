@@ -4,9 +4,13 @@ import org.codenot.ssa.controller.dto.ConjunctionAssessment;
 import org.codenot.ssa.domain.AssessmentStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Service
 public class AssessmentService {
@@ -59,5 +63,9 @@ public class AssessmentService {
 
     public ConjunctionAssessment getAssessment(Long id) {
         return store.get(id);
+    }
+
+    public List<Long> getAssessmentIds() {
+        return new ArrayList<>(store.keySet());
     }
 }

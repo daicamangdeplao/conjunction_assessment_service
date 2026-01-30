@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/assessments")
@@ -48,9 +49,13 @@ public class AssessmentController {
             @RequestParam String primary,
             @RequestParam String secondary
     ) {
-        // TODO assessment service performs this task
         Long assessmentId = assessmentService.submitAssessment(primary, secondary);
         return ResponseEntity.created(URI.create("/api/v1/assessments/" + assessmentId)).build();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Long>> getAll() {
+        return ResponseEntity.ok(assessmentService.getAssessmentIds());
     }
 
     @GetMapping("/{id}")
