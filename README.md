@@ -1,217 +1,121 @@
-# Asynchronous Conjunction Assessment Service
+# Conjunction Assessment Service
 
-## Domain framing (Space Situational Awareness (SSA), Space Traffic Management (STM) aligned)
+A Spring Boot microservice for evaluating satellite conjunction risks and computing collision probabilities between space objects.
 
-In real SSA systems, conjunction assessments (collision risk checks between space objects) are:
+## Overview
 
-* computationally expensive,
-* triggered frequently,
-* never done synchronously in request/response paths.
+This service provides a REST API for Space Situational Awareness (SSA) operations, specifically focused on conjunction assessments. It evaluates potential collision risks between a primary space object (e.g., an active satellite) and a secondary object (e.g., space debris or another satellite).
 
-## Core idea
+The service performs asynchronous collision probability computations using orbit propagation and covariance analysis simulations.
 
-A REST API receives a conjunction assessment request for two space objects.
+## Technology Stack
 
-* The request is acknowledged immediately.
-* The collision probability computation runs asynchronously.
-* Results are stored and can be queried later.
+* **Java 25** - Programming language
+* **Spring Boot 4.0.2** - Application framework
+* **Spring Web MVC** - REST API
+* **Lombok** - Code generation (builders, getters, setters)
+* **PostgreSQL** - Database (configured but not yet implemented)
+* **Gradle** - Build tool
 
-## Async techniques demonstrated
+## Key Features
 
-* Fire-and-forget job submission
-* @Async with bounded executors
-* CompletableFuture for result tracking
-* Polling-based status retrieval (very common in STM systems)
-* Clear separation between operational and analytical paths
+1. Submit conjunction assessments for two space objects
+2. Asynchronous collision probability computation
+3. Track assessment status (PENDING, RUNNING, COMPLETED, FAILED)
+4. Retrieve individual assessments or list all assessments
+5. Thread-safe concurrent processing
 
-## Minimal functional requirements
+## Architecture
+### Data Model
 
-* POST /assessments
-    * Accepts two object IDs + time window
-    * Returns an assessmentId immediately
-* Async background task
-    * Simulates orbit propagation + miss-distance computation
-    * Takes several seconds
-* GET /assessments/{id}
-    * Returns status: PENDING | RUNNING | COMPLETED | FAILED
-    * Includes collision probability when done
-
-## High-level architecture
-
-Controller
-↓
-AssessmentService (sync)
-↓
-AssessmentExecutor (@Async)
-↓
-In-memory store (ConcurrentHashMap)
-
-## Domain model (simplified)
-
-````java
-public enum AssessmentStatus {
-    PENDING, RUNNING, COMPLETED, FAILED
+```
+ConjunctionAssessment {
+    Long id
+    String primaryObjectId
+    String secondaryObjectId
+    AssessmentStatus status
+    BigDecimal collisionProbability
 }
+```
 
-public record ConjunctionAssessment(
-        UUID id,
-        String primaryObjectId,
-        String secondaryObjectId,
-        AssessmentStatus status,
-        Double collisionProbability
-) {
+## API Endpoints
+### Submit Assessment
+
+```http
+POST /api/v1/assessments?primary={primaryObj}&secondary={secondaryObj}
+```
+
+* Creates a new conjunction assessment between two space objects.
+* **Parameters:**
+  * `primary` - ID of the primary (protected) space object
+  * `secondary` - ID of the secondary (encounter) space object
+* **Response:** `201 Created` with Location header pointing to the created resource
+
+### Get All Assessments
+```http
+GET /api/v1/assessments
+```
+* Returns a list of all assessment IDs.
+* **Response:** `200 OK` with JSON array of assessment IDs
+
+### Get Assessment by
+```http
+GET /api/v1/assessments/{id}
+```
+* Retrieves a specific assessment with its current status and collision probability.
+* **Response:** `200 OK` with ConjunctionAssessment JSON object
+
+## Prerequisites
+* Java 25 or higher
+* Gradle (or use included wrapper)
+* PostgreSQL (for future persistence)
+
+## Setup & Running
+### Build the project
+
+```bash
+./gradlew build
+```
+
+### Run the application
+```bash
+./gradlew bootRun
+```
+The service will start on the default Spring Boot port (8080).
+
+## Usage Examples
+### Submit a new assessment
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/assessments?primary=SAT-001&secondary=DEBRIS-456" -i
+```
+
+### List all assessments
+
+```bash
+curl http://localhost:8080/api/v1/assessments
+```
+
+### Get specific assessment
+
+```bash
+curl http://localhost:8080/api/v1/assessments/123456789
+```
+
+Example response:
+```json
+{
+"id": 123456789,
+"primaryObjectId": "SAT-001",
+"secondaryObjectId": "DEBRIS-456",
+"status": "COMPLETED",
+"collisionProbability": 0.000023456
 }
+```
 
-````
+## Current Limitations
 
-## Async executor configuration
-
-````java
-
-@Configuration
-@EnableAsync
-public class AsyncConfig {
-
-    @Bean(name = "assessmentExecutor")
-    public Executor assessmentExecutor() {
-        ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
-        exec.setCorePoolSize(2);
-        exec.setMaxPoolSize(4);
-        exec.setQueueCapacity(50);
-        exec.setThreadNamePrefix("ssa-ca-");
-        exec.initialize();
-        return exec;
-    }
-}
-
-````
-
-## Async computation service (SSA flavor)
-
-````java
-
-@Service
-public class ConjunctionComputationService {
-
-    @Async("assessmentExecutor")
-    public CompletableFuture<Double> computeCollisionProbability() {
-
-        try {
-            // simulate orbit propagation & covariance analysis
-            Thread.sleep(4000);
-
-            // fake but realistic-looking probability
-            double probability = Math.random() * 1e-4;
-
-            return CompletableFuture.completedFuture(probability);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return CompletableFuture.failedFuture(e);
-        }
-    }
-}
-````
-
-## Orchestration service
-
-````java
-
-@Service
-public class AssessmentService {
-
-    private final ConjunctionComputationService computationService;
-    private final Map<UUID, ConjunctionAssessment> store = new ConcurrentHashMap<>();
-
-    public AssessmentService(ConjunctionComputationService computationService) {
-        this.computationService = computationService;
-    }
-
-    public UUID submitAssessment(String objA, String objB) {
-        UUID id = UUID.randomUUID();
-
-        store.put(id, new ConjunctionAssessment(
-                id, objA, objB, AssessmentStatus.PENDING, null));
-
-        computationService.computeCollisionProbability()
-                .thenAccept(prob -> store.put(id,
-                        new ConjunctionAssessment(id, objA, objB,
-                                AssessmentStatus.COMPLETED, prob)))
-                .exceptionally(ex -> {
-                    store.put(id,
-                            new ConjunctionAssessment(id, objA, objB,
-                                    AssessmentStatus.FAILED, null));
-                    return null;
-                });
-
-        return id;
-    }
-
-    public ConjunctionAssessment getAssessment(UUID id) {
-        return store.get(id);
-    }
-}
-````
-
-## REST controller
-
-````java
-
-@RestController
-@RequestMapping("/api/assessments")
-public class AssessmentController {
-
-    private final AssessmentService assessmentService;
-
-    public AssessmentController(AssessmentService assessmentService) {
-        this.assessmentService = assessmentService;
-    }
-
-    @PostMapping
-    public ResponseEntity<UUID> submit(
-            @RequestParam String primary,
-            @RequestParam String secondary) {
-
-        UUID id = assessmentService.submitAssessment(primary, secondary);
-        return ResponseEntity.accepted().body(id);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ConjunctionAssessment> get(@PathVariable UUID id) {
-        return ResponseEntity.ok(assessmentService.getAssessment(id));
-    }
-}
-````
-
-## Why this fits SSA / STM / FD / STC well
-
-* Asynchronous by nature (no blocking during propagation)
-* Mirrors real conjunction screening workflows
-* Conservative polling model (common in ops systems)
-* Clean separation of command vs query
-* Easy to evolve toward:
-    * maneuver planning (FD),
-    * priority queues (STC),
-    * message-driven pipelines (STM)
-
-## Natural extensions (realistic next steps)
-
-* Time-window parameterization
-* Priority levels (human-in-the-loop STC)
-* Rate limiting per operator
-* Replace in-memory store with PostgreSQL
-* Event emission on high-risk conjunctions
-
-## ThreadPoolTaskExecutor vs Virtual Threads
-
-| Aspect         | ThreadPoolTaskExecutor | Virtual Threads                  |
-|----------------|------------------------|----------------------------------|
-| Thread type    | Platform (OS) threads  | Virtual (JVM-managed)            |
-| Creation cost  | High                   | Very low                         |
-| Blocking calls | Dangerous              | Safe                             |
-| Pool sizing    | Critical               | Usually unnecessary              |
-| Back-pressure  | Manual                 | Via structured concurrency       |
-| Debugging      | Familiar               | Slightly new, improving          |
-| Legacy libs    | Fully compatible       | Mostly compatible (some caveats) |
-
-ThreadPoolTaskExecutor is preferable in this project due to the assumption on CPU-bounding computation for the probability.
+* In-memory storage using ConcurrentHashMap (data is lost on restart)
+* Collision probability computation is simulated (not real orbital mechanics)
+* PostgreSQL dependency configured but not yet utilized
+* No authentication or authorization
