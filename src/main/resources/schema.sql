@@ -1,3 +1,8 @@
+DROP TABLE IF EXISTS space_object;
+
+DROP INDEX IF EXISTS idx_space_object_id;
+DROP INDEX IF EXISTS idx_space_object_norad_catalog_number;
+
 CREATE TABLE IF NOT EXISTS space_object
 (
     id                    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

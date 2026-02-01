@@ -1,4 +1,4 @@
-INSERT INTO space_objects (norad_catalog_number,
+INSERT INTO space_object (norad_catalog_number,
                            object_name,
                            object_type,
                            operational_status,
