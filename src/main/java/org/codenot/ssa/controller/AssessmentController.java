@@ -1,6 +1,6 @@
 package org.codenot.ssa.controller;
 
-import org.codenot.ssa.controller.dto.ConjunctionAssessment;
+import org.codenot.ssa.dto.ConjunctionAssessment;
 import org.codenot.ssa.service.AssessmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,10 +34,10 @@ public class AssessmentController {
      *   <li>Secondary object: debris fragment, defunct satellite, rocket body</li>
      * </ul>
      *
-     * @param primaryObject
+     * @param primary
      *        the protected asset for which conjunction risk is computed and
      *        avoidance actions may be planned
-     * @param secondaryObject
+     * @param secondary
      *        the encounter object included only to assess collision risk;
      *        no maneuver is assumed
      * @return a {@code ConjunctionRiskResult} containing probability and miss-distance metrics
@@ -46,8 +46,8 @@ public class AssessmentController {
      */
     @PostMapping
     public ResponseEntity<String> submit(
-            @RequestParam String primary,
-            @RequestParam String secondary
+            @RequestParam Long primary,
+            @RequestParam Long secondary
     ) {
         Long assessmentId = assessmentService.submitAssessment(primary, secondary);
         return ResponseEntity.created(URI.create("/api/v1/assessments/" + assessmentId)).build();
