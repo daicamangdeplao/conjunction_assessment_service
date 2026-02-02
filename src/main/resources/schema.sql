@@ -1,4 +1,5 @@
 DROP TABLE IF EXISTS space_object;
+drop table if exists conjunction_assessment;
 
 DROP INDEX IF EXISTS idx_space_object_id;
 DROP INDEX IF EXISTS idx_space_object_norad_catalog_number;
@@ -58,3 +59,6 @@ CREATE TABLE IF NOT EXISTS conjunction_assessment (
 ALTER TABLE conjunction_assessment OWNER TO postgres;
 CREATE INDEX IF NOT EXISTS idx_conjunction_assessment_id ON conjunction_assessment (id);
 CREATE INDEX IF NOT EXISTS idx_conjunction_assessment_primary_object_id_secondary_object_id ON conjunction_assessment (primary_object_id, secondary_object_id);
+
+alter sequence conjunction_assessment_id_seq restart with 1;
+alter sequence space_object_id_seq restart with 1;
