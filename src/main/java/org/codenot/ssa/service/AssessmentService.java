@@ -1,12 +1,13 @@
 package org.codenot.ssa.service;
 
 import org.codenot.ssa.domain.ConjunctionAssessmentJPAEntity;
-import org.codenot.ssa.dto.ConjunctionAssessment;
 import org.codenot.ssa.domain.constant.AssessmentStatus;
+import org.codenot.ssa.dto.ConjunctionAssessment;
 import org.codenot.ssa.repository.ConjunctionAssessmentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +29,8 @@ public class AssessmentService {
         this.computationService = computationService;
     }
 
-    public Long submitAssessment(Long primaryObj, Long secondaryObj) {
+    @Deprecated
+    public Long submitAssessmentAsync(Long primaryObj, Long secondaryObj) {
         long id = ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE);
         store.put(
                 id,
@@ -64,7 +66,7 @@ public class AssessmentService {
     }
 
     @Transactional
-    public void submitAssessment(
+    public void submitAssessmentAsync(
             Long primaryObj,
             Long secondaryObj,
             Integer priority,
@@ -83,7 +85,7 @@ public class AssessmentService {
                 .timeStepMinutes(timeStepInMinutes)
                 .build();
         conjunctionAssessmentRepository.save(conjunctionAssessment);
-        computationService.computeCollisionProbabilityGateway(windowStart, windowEnd, timeStepInMinutes)
+        computationService.computeCollisionProbabilityGatewayAsync(windowStart, windowEnd, timeStepInMinutes)
                 .thenAccept(probability -> {
                     conjunctionAssessment.setStatus(AssessmentStatus.COMPLETED);
                     conjunctionAssessment.setCollisionProbability(probability.doubleValue());
@@ -96,6 +98,33 @@ public class AssessmentService {
                     conjunctionAssessmentRepository.save(conjunctionAssessment);
                     return null;
                 });
+    }
+
+    @Transactional
+    public void submitAssessmentSync(
+            Long primaryObj,
+            Long secondaryObj,
+            Integer priority,
+            LocalDateTime windowStart,
+            LocalDateTime windowEnd,
+            Integer timeStepInMinutes
+    ) {
+        ConjunctionAssessmentJPAEntity conjunctionAssessment = ConjunctionAssessmentJPAEntity.builder()
+                .primaryObjectId(primaryObj)
+                .secondaryObjectId(secondaryObj)
+                .status(AssessmentStatus.PENDING)
+                .priorityLevel(priority)
+                .requestedAt(LocalDateTime.now())
+                .windowStart(windowStart)
+                .windowEnd(windowEnd)
+                .timeStepMinutes(timeStepInMinutes)
+                .build();
+        conjunctionAssessmentRepository.save(conjunctionAssessment);
+        BigDecimal probability = computationService.computeCollisionProbabilityGatewaySync(windowStart, windowEnd, timeStepInMinutes);
+        conjunctionAssessment.setStatus(AssessmentStatus.COMPLETED);
+        conjunctionAssessment.setCollisionProbability(probability.doubleValue());
+        conjunctionAssessment.setCompletedAt(LocalDateTime.now());
+        conjunctionAssessmentRepository.save(conjunctionAssessment);
     }
 
     public ConjunctionAssessment getAssessment(Long id) {

@@ -3,6 +3,7 @@ package org.codenot.ssa.service.background;
 import org.codenot.ssa.domain.constant.OperationalStatus;
 import org.codenot.ssa.repository.SpaceObjectRepository;
 import org.codenot.ssa.service.AssessmentService;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,7 @@ public class RoutineScreeningScheduler {
     // @Profile("prod") -> run as parallel as expected!
     // Furthermore, the fixRate is also needed to be parameterized that allows us to run the service whenever we want!
     @Scheduled(fixedRate = 5000)
+    @Profile("!dev")
     public void submitRoutineScreening() {
         Map<Long, List<Long>> screeningPairs = constructScreeningPairs();
 
@@ -41,7 +43,7 @@ public class RoutineScreeningScheduler {
             entry.getValue().parallelStream()
                     .forEach(secondary -> {
                         LocalDateTime now = LocalDateTime.now();
-                        assessmentService.submitAssessment(
+                        assessmentService.submitAssessmentAsync(
                                 primary,
                                 secondary,
                                 5,
@@ -54,6 +56,27 @@ public class RoutineScreeningScheduler {
 
         // Log should come here
 
+    }
+
+    public void submitRoutineScreeningManual() {
+        Map<Long, List<Long>> screeningPairs = constructScreeningPairs();
+
+        // Log should come here
+        screeningPairs.forEach((primary, relatedObjects) -> relatedObjects.forEach(secondary -> {
+            LocalDateTime now = LocalDateTime.now();
+            assessmentService.submitAssessmentSync(
+                    primary,
+                    secondary,
+                    5,
+                    now,
+                    now.plusDays(1),
+                    timeStepInMinute
+            );
+        }));
+        // Log should come here
+    }
+
+    private void submitRoutineScreeningAsync() {
     }
 
     private Map<Long, List<Long>> constructScreeningPairs() {

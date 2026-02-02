@@ -4,8 +4,11 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
@@ -28,19 +31,36 @@ public class ConjunctionComputationService {
     }
 
     @Async("assessmentExecutor")
-    public CompletableFuture<BigDecimal> computeCollisionProbabilityGateway(
-            LocalDateTime windowStart,
-            LocalDateTime windowEnd,
-            Integer timeStepInMinutes
+    public CompletableFuture<BigDecimal> computeCollisionProbabilityGatewayAsync(
+            final LocalDateTime windowStart,
+            final LocalDateTime windowEnd,
+            final Integer timeStepInMinutes
     ) {
         final long epochStart = windowStart.toEpochSecond(ZoneOffset.UTC);
         final long epochEnd = windowEnd.toEpochSecond(ZoneOffset.UTC);
         final int steps = Math.toIntExact((epochEnd - epochStart) / timeStepInMinutes);
 
-        BigDecimal finalProbability = IntStream.range(0, steps)
+        BigDecimal finalProbability = simulateProbabilityCalculation(steps);
+
+        return CompletableFuture.completedFuture(finalProbability);
+    }
+
+    public BigDecimal computeCollisionProbabilityGatewaySync(
+            final LocalDateTime windowStart,
+            final LocalDateTime windowEnd,
+            final Integer timeStepInMinutes
+    ) {
+        final Duration duration = Duration.between(windowStart, windowEnd);
+        final long durationInMinute = duration.toMinutes();
+        final int steps = Math.toIntExact(durationInMinute / timeStepInMinutes);
+        return simulateProbabilityCalculation(steps);
+    }
+
+    private BigDecimal simulateProbabilityCalculation(int steps) {
+        return IntStream.range(0, steps)
                 .mapToObj(_ -> {
                     try {
-                        Thread.sleep(ThreadLocalRandom.current().nextLong(4000, 10000));
+                        Thread.sleep(10);
                     } catch (InterruptedException _) {
                         // Only for toy
                     }
@@ -49,7 +69,5 @@ public class ConjunctionComputationService {
                     return BigDecimal.valueOf(probability);
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::max);
-
-        return CompletableFuture.completedFuture(finalProbability);
     }
 }

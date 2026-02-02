@@ -9,9 +9,16 @@ public class RoutineScreeningConfig {
 
     @Value("${screening.scheduler.timeStepInMinute}")
     private int timeStepInMinute;
+    @Value("${screening.scheduler.mode}")
+    private String mode;
 
     @Bean
     public int timeStepInMinute() {
         return timeStepInMinute;
+    }
+
+    @Bean
+    public String screeningMode() {
+        return mode;
     }
 }

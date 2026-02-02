@@ -34,12 +34,10 @@ public class AssessmentController {
      *   <li>Secondary object: debris fragment, defunct satellite, rocket body</li>
      * </ul>
      *
-     * @param primary
-     *        the protected asset for which conjunction risk is computed and
-     *        avoidance actions may be planned
-     * @param secondary
-     *        the encounter object included only to assess collision risk;
-     *        no maneuver is assumed
+     * @param primary   the protected asset for which conjunction risk is computed and
+     *                  avoidance actions may be planned
+     * @param secondary the encounter object included only to assess collision risk;
+     *                  no maneuver is assumed
      * @return a {@code ConjunctionRiskResult} containing probability and miss-distance metrics
      * @throws IllegalArgumentException if either object is {@code null}
      * @since 1.0
@@ -49,7 +47,7 @@ public class AssessmentController {
             @RequestParam Long primary,
             @RequestParam Long secondary
     ) {
-        Long assessmentId = assessmentService.submitAssessment(primary, secondary);
+        Long assessmentId = assessmentService.submitAssessmentAsync(primary, secondary);
         return ResponseEntity.created(URI.create("/api/v1/assessments/" + assessmentId)).build();
     }
 
