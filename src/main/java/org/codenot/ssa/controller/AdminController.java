@@ -20,7 +20,7 @@ public class AdminController {
 
     @GetMapping("/scheduler")
     public ResponseEntity<String> runSchedulerSync() {
-        routineScreeningScheduler.submitRoutineScreeningManual();
+        routineScreeningScheduler.submitRoutineScreeningSync();
         return ResponseEntity.ok("Scheduler is running");
     }
 }
