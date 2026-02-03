@@ -3,10 +3,9 @@ package org.codenot.ssa.controller;
 import org.codenot.ssa.dto.ConjunctionAssessment;
 import org.codenot.ssa.service.AssessmentService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/assessments")
@@ -21,4 +20,10 @@ public class AssessmentController {
     public ResponseEntity<ConjunctionAssessment> get(@PathVariable Long id) {
         return ResponseEntity.ok(assessmentService.getAssessment(id));
     }
+
+    @GetMapping("/{primaryId}")
+    public ResponseEntity<List<ConjunctionAssessment>> get(@PathVariable Long primaryId, @RequestParam(required = false) Long secondaryId) {
+        return ResponseEntity.ok(assessmentService.getAssessmentByPrimaryId(primaryId, secondaryId));
+    }
+
 }

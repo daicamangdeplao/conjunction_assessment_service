@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class AssessmentService {
@@ -115,5 +116,18 @@ public class AssessmentService {
             return ConjunctionAssessment.empty();
         }
         return ConjunctionAssessment.fromJPAEntity(conjunctionAssessmentJPAEntity);
+    }
+
+    public List<ConjunctionAssessment> getAssessmentByPrimaryId(Long primaryId, Long secondaryId) {
+        List<ConjunctionAssessmentJPAEntity> conjunctionAssessmentJPAEntity;
+        if (secondaryId == null) {
+            conjunctionAssessmentJPAEntity = conjunctionAssessmentRepository.findByPrimaryObjectId(primaryId);
+        } else {
+            conjunctionAssessmentJPAEntity = conjunctionAssessmentRepository.findByPrimaryObjectIdAndSecondaryObjectId(primaryId, secondaryId);
+        }
+
+        return conjunctionAssessmentJPAEntity.stream()
+                .map(ConjunctionAssessment::fromJPAEntity)
+                .toList();
     }
 }

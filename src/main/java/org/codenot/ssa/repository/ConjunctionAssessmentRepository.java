@@ -14,8 +14,7 @@ public interface ConjunctionAssessmentRepository extends JpaRepository<Conjuncti
     List<ConjunctionAssessmentJPAEntity> findByStatus(AssessmentStatus status);
 
     List<ConjunctionAssessmentJPAEntity> findByPrimaryObjectId(Long primaryObjectId);
-
-    List<ConjunctionAssessmentJPAEntity> findBySecondaryObjectId(Long secondaryObjectId);
+    List<ConjunctionAssessmentJPAEntity> findByPrimaryObjectIdAndSecondaryObjectId(Long primaryObjectId, Long secondaryObjectId);
 
     List<ConjunctionAssessmentJPAEntity> findByPriorityLevelGreaterThanEqual(Integer priorityLevel);
 
