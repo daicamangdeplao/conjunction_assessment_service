@@ -1,5 +1,6 @@
 package org.codenot.ssa.service.background;
 
+import lombok.extern.slf4j.Slf4j;
 import org.codenot.ssa.domain.constant.OperationalStatus;
 import org.codenot.ssa.repository.SpaceObjectRepository;
 import org.codenot.ssa.service.AssessmentService;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 public class RoutineScreeningScheduler {
 
@@ -64,7 +66,10 @@ public class RoutineScreeningScheduler {
     public void submitRoutineScreeningSync() {
         Map<Long, List<Long>> screeningPairs = constructScreeningPairs();
 
-        // Log should come here
+        int totalAssessments = screeningPairs.values().stream().mapToInt(List::size).sum();
+        log.info("Starting routine screening sync: {} primary objects, {} total assessments, timeStep: {} minutes, period: 1 day",
+                screeningPairs.size(), totalAssessments, timeStepInMinute);
+
         screeningPairs.forEach((primary, relatedObjects) -> relatedObjects.forEach(secondary -> {
             LocalDateTime now = LocalDateTime.now();
             assessmentService.submitAssessmentSync(
@@ -76,7 +81,8 @@ public class RoutineScreeningScheduler {
                     timeStepInMinute
             );
         }));
-        // Log should come here
+
+        log.info("Completed routine screening sync: {} assessments submitted successfully", totalAssessments);
     }
 
     private void submitRoutineScreeningAsync() {
