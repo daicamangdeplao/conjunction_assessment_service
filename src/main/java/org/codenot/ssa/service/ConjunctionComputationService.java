@@ -6,9 +6,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
@@ -36,12 +33,8 @@ public class ConjunctionComputationService {
             final LocalDateTime windowEnd,
             final Integer timeStepInMinutes
     ) {
-        final long epochStart = windowStart.toEpochSecond(ZoneOffset.UTC);
-        final long epochEnd = windowEnd.toEpochSecond(ZoneOffset.UTC);
-        final int steps = Math.toIntExact((epochEnd - epochStart) / timeStepInMinutes);
-
+        final int steps = calculatePropagationSteps(windowStart, windowEnd, timeStepInMinutes);
         BigDecimal finalProbability = simulateProbabilityCalculation(steps);
-
         return CompletableFuture.completedFuture(finalProbability);
     }
 
@@ -50,9 +43,7 @@ public class ConjunctionComputationService {
             final LocalDateTime windowEnd,
             final Integer timeStepInMinutes
     ) {
-        final Duration duration = Duration.between(windowStart, windowEnd);
-        final long durationInMinute = duration.toMinutes();
-        final int steps = Math.toIntExact(durationInMinute / timeStepInMinutes);
+        final int steps = calculatePropagationSteps(windowStart, windowEnd, timeStepInMinutes);
         return simulateProbabilityCalculation(steps);
     }
 
@@ -69,5 +60,11 @@ public class ConjunctionComputationService {
                     return BigDecimal.valueOf(probability);
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::max);
+    }
+
+    private int calculatePropagationSteps(LocalDateTime windowStart, LocalDateTime windowEnd, Integer timeStepInMinutes) {
+        final Duration duration = Duration.between(windowStart, windowEnd);
+        final long durationInMinute = duration.toMinutes();
+        return Math.toIntExact(durationInMinute / timeStepInMinutes);
     }
 }
