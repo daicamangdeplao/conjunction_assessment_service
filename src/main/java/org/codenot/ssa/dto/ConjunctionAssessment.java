@@ -1,6 +1,7 @@
 package org.codenot.ssa.dto;
 
 import lombok.Builder;
+import org.codenot.ssa.domain.ConjunctionAssessmentJPAEntity;
 import org.codenot.ssa.domain.constant.AssessmentStatus;
 
 import java.math.BigDecimal;
@@ -17,7 +18,25 @@ public record ConjunctionAssessment(
         LocalDateTime completedAt,
         Integer priorityLevel,
         LocalDateTime windowStart,
-        LocalDateTime windowEnd,
-        Integer timeStepMinutes
+        LocalDateTime windowEnd
 ) {
+
+    public static ConjunctionAssessment fromJPAEntity(ConjunctionAssessmentJPAEntity entity) {
+        return ConjunctionAssessment.builder()
+                .id(entity.getId())
+                .primaryObjectId(entity.getPrimaryObjectId())
+                .secondaryObjectId(entity.getSecondaryObjectId())
+                .status(entity.getStatus())
+                .collisionProbability(BigDecimal.valueOf(entity.getCollisionProbability()))
+                .requestedAt(entity.getRequestedAt())
+                .completedAt(entity.getCompletedAt())
+                .priorityLevel(entity.getPriorityLevel())
+                .windowStart(entity.getWindowStart())
+                .windowEnd(entity.getWindowEnd())
+                .build();
+    }
+
+    public static ConjunctionAssessment empty() {
+        return ConjunctionAssessment.builder().build();
+    }
 }

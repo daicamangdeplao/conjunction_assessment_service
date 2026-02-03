@@ -9,16 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AssessmentService {
 
-    // Due to the asynchronous processing, concurrent hash map is chosen for thread-safe
-    private final Map<Long, ConjunctionAssessment> store = new ConcurrentHashMap<>();
     private final ConjunctionAssessmentRepository conjunctionAssessmentRepository;
 
     private final ConjunctionComputationService computationService;
@@ -116,10 +110,10 @@ public class AssessmentService {
     }
 
     public ConjunctionAssessment getAssessment(Long id) {
-        return store.get(id);
-    }
-
-    public List<Long> getAssessmentIds() {
-        return new ArrayList<>(store.keySet());
+        ConjunctionAssessmentJPAEntity conjunctionAssessmentJPAEntity = conjunctionAssessmentRepository.findById(id).orElse(null);
+        if (conjunctionAssessmentJPAEntity == null) {
+            return ConjunctionAssessment.empty();
+        }
+        return ConjunctionAssessment.fromJPAEntity(conjunctionAssessmentJPAEntity);
     }
 }

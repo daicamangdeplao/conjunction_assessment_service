@@ -8,8 +8,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/assessments")
 public class AssessmentController {
@@ -17,11 +15,6 @@ public class AssessmentController {
 
     public AssessmentController(AssessmentService assessmentService) {
         this.assessmentService = assessmentService;
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Long>> getAll() {
-        return ResponseEntity.ok(assessmentService.getAssessmentIds());
     }
 
     @GetMapping("/{id}")
