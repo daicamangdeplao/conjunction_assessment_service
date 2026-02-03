@@ -17,12 +17,12 @@ public class AssessmentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ConjunctionAssessment> get(@PathVariable Long id) {
+    public ResponseEntity<ConjunctionAssessment> getAssessment(@PathVariable Long id) {
         return ResponseEntity.ok(assessmentService.getAssessment(id));
     }
 
-    @GetMapping("/{primaryId}")
-    public ResponseEntity<List<ConjunctionAssessment>> get(@PathVariable Long primaryId, @RequestParam(required = false) Long secondaryId) {
+    @GetMapping
+    public ResponseEntity<List<ConjunctionAssessment>> getAssessmentForGivenObjects(@RequestParam Long primaryId, @RequestParam(required = false) Long secondaryId) {
         return ResponseEntity.ok(assessmentService.getAssessmentByPrimaryId(primaryId, secondaryId));
     }
 
