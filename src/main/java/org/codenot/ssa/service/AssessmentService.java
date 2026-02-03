@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class AssessmentService {
@@ -29,42 +28,31 @@ public class AssessmentService {
         this.computationService = computationService;
     }
 
-    @Deprecated
-    public Long submitAssessmentAsync(Long primaryObj, Long secondaryObj) {
-        long id = ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE);
-        store.put(
-                id,
-                ConjunctionAssessment.builder()
-                        .id(id)
-                        .primaryObjectId(primaryObj)
-                        .secondaryObjectId(secondaryObj)
-                        .status(AssessmentStatus.PENDING)
-                        .collisionProbability(null)
-                        .build()
-        );
-
-        computationService.computeCollisionProbability()
-                .thenAccept(probability -> store.put(id, ConjunctionAssessment.builder()
-                        .id(id)
-                        .primaryObjectId(primaryObj)
-                        .secondaryObjectId(secondaryObj)
-                        .status(AssessmentStatus.PENDING)
-                        .collisionProbability(probability)
-                        .build()))
-                .exceptionally(_ -> {
-                    store.put(id, ConjunctionAssessment.builder()
-                            .id(id)
-                            .primaryObjectId(primaryObj)
-                            .secondaryObjectId(secondaryObj)
-                            .status(AssessmentStatus.FAILED)
-                            .collisionProbability(null)
-                            .build());
-                    return null;
-                });
-
-        return id;
-    }
-
+    /**
+     * Evaluates the conjunction risk between a primary and a secondary space object.
+     *
+     * <p>The <strong>primary object</strong> represents the protected asset for which
+     * risk is assessed and potential mitigation actions are planned. It is typically
+     * an active, maneuverable spacecraft operated by the organization or its customer.</p>
+     *
+     * <p>The <strong>secondary object</strong> represents the encounter object and is
+     * included solely for risk assessment. It is often non-maneuverable or externally
+     * owned, and no action is expected from it.</p>
+     *
+     * <h3>Examples</h3>
+     * <ul>
+     *   <li>Primary object: Earth-observation satellite, GNSS satellite, crewed vehicle</li>
+     *   <li>Secondary object: debris fragment, defunct satellite, rocket body</li>
+     * </ul>
+     *
+     * @param primary   the protected asset for which conjunction risk is computed and
+     *                  avoidance actions may be planned
+     * @param secondary the encounter object included only to assess collision risk;
+     *                  no maneuver is assumed
+     * @return a {@code ConjunctionRiskResult} containing probability and miss-distance metrics
+     * @throws IllegalArgumentException if either object is {@code null}
+     * @since 1.0
+     */
     @Transactional
     public void submitAssessmentAsync(
             Long primaryObj,
