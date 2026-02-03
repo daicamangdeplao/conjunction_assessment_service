@@ -8,24 +8,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 @Service
 public class ConjunctionComputationService {
-
-    @Async("assessmentExecutor")
-    public CompletableFuture<BigDecimal> computeCollisionProbability() {
-        try {
-            // simulate orbit propagation & covariance analysis
-            Thread.sleep(ThreadLocalRandom.current().nextLong(4000, 10000));
-            double probability = Math.random() * 1e-4;
-            return CompletableFuture.completedFuture(BigDecimal.valueOf(probability));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        }
-    }
 
     @Async("assessmentExecutor")
     public CompletableFuture<BigDecimal> computeCollisionProbabilityGatewayAsync(

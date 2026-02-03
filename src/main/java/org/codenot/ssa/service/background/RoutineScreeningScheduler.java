@@ -29,7 +29,8 @@ public class RoutineScreeningScheduler {
     }
 
     // This critical task is environment-dependent, so that this should be profilerized!
-    // e.g., @Profile("dev") -> run as sequential that makes debug easier!
+    // e.g.,
+    // @Profile("dev") -> run as sequential that makes debug easier!
     // @Profile("stage") -> run as parallel that simulates the production-like performance!
     // @Profile("prod") -> run as parallel as expected!
     // Furthermore, the fixRate is also needed to be parameterized that allows us to run the service whenever we want!
