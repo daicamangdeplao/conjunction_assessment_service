@@ -8,9 +8,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
@@ -58,7 +58,7 @@ public class RoutineScreeningScheduler {
 
     }
 
-    public void submitRoutineScreeningManual() {
+    public void submitRoutineScreeningSync() {
         Map<Long, List<Long>> screeningPairs = constructScreeningPairs();
 
         // Log should come here
@@ -83,13 +83,13 @@ public class RoutineScreeningScheduler {
         // Create the pairs
         // The pairs should be cached. The cached is only updated when detecting the change in database
         List<Long> activeSpaceObjectIds = spaceObjectRepository.findAllSpaceObjectIdsByOperationalStatus(OperationalStatus.ACTIVE);
-        List<Long> inactiveSpaceObjectIds = spaceObjectRepository.findAllSpaceObjectIds();
+        List<Long> allSpaceObjectIds = spaceObjectRepository.findAllSpaceObjectIds();
 
         return activeSpaceObjectIds.stream()
-                .collect(Collectors.toMap(u -> u, u -> {
-                    List<Long> foo = new ArrayList<>(inactiveSpaceObjectIds);
-                    foo.remove(u);
-                    return foo;
-                }));
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        activeIds -> allSpaceObjectIds.stream()
+                                .filter(id -> !id.equals(activeIds))
+                                .toList()));
     }
 }
