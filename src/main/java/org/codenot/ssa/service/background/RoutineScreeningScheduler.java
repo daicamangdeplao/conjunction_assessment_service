@@ -8,6 +8,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -82,14 +84,54 @@ public class RoutineScreeningScheduler {
     private Map<Long, List<Long>> constructScreeningPairs() {
         // Create the pairs
         // The pairs should be cached. The cached is only updated when detecting the change in database
+        // Cache at the service level
+        // Invalidate on:
+        //      space object insert/delete
+        //      operational status change
         List<Long> activeSpaceObjectIds = spaceObjectRepository.findAllSpaceObjectIdsByOperationalStatus(OperationalStatus.ACTIVE);
         List<Long> allSpaceObjectIds = spaceObjectRepository.findAllSpaceObjectIds();
 
-        return activeSpaceObjectIds.stream()
-                .collect(Collectors.toMap(
-                        Function.identity(),
-                        activeIds -> allSpaceObjectIds.stream()
-                                .filter(id -> !id.equals(activeIds))
-                                .toList()));
+        /**
+         * fewer allocations
+         * No stream pipeline overhead
+         * predictable memory layout
+         * better JIT optimization
+         * lower GC pressure
+         * */
+        Map<Long, List<Long>> screeningPairs = new HashMap<>(activeSpaceObjectIds.size());
+        for (Long activeSpaceObjectId : activeSpaceObjectIds) {
+            List<Long> targets = new ArrayList<>(allSpaceObjectIds.size() - 1);
+            for (Long id : allSpaceObjectIds) {
+                if (!id.equals(activeSpaceObjectId)) {
+                    targets.add(id);
+                }
+            }
+            screeningPairs.put(activeSpaceObjectId, targets);
+        }
+        return screeningPairs;
+
+        /**
+         * 1. Creat new Stream pipeline
+         * 2. Allocate lambda object
+         * 3. Invoke virtual call per element, i.e., Predicate.test()
+         * 4. Use an internal resizing strategy
+         * 5. Create an unmodifiable list wrapper
+         *
+         * more object creation
+         * more indirection
+         * more branch misprediction
+         * more pressure on coung-gen GC
+         *
+         * Stream pipeline is preferred when:
+         *  - run rarely
+         *  - batch size is small (< few thousand)
+         *  - clarity is more important than throughput
+         * */
+//        return activeSpaceObjectIds.stream()
+//                .collect(Collectors.toMap(
+//                        Function.identity(),
+//                        activeIds -> allSpaceObjectIds.stream()
+//                                .filter(id -> !id.equals(activeIds))
+//                                .toList()));
     }
 }
