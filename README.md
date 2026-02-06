@@ -8,6 +8,8 @@ This service provides a REST API for Space Situational Awareness (SSA) operation
 
 The service performs both synchronous and asynchronous collision probability computations using orbit propagation and covariance analysis simulations. It includes an automated routine screening scheduler that continuously monitors active satellites against all tracked space objects.
 
+SSA architectures are traditionally pipeline-oriented (ingest → propagate → assess → disseminate)
+
 ## Technology Stack
 
 * **Java 25** - Programming language

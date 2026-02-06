@@ -1,5 +1,6 @@
 package org.codenot.ssa.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.codenot.ssa.domain.ConjunctionAssessmentJPAEntity;
 import org.codenot.ssa.domain.constant.AssessmentStatus;
 import org.codenot.ssa.dto.ConjunctionAssessment;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Slf4j
 public class AssessmentService {
 
     private final ConjunctionAssessmentRepository conjunctionAssessmentRepository;

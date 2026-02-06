@@ -1,9 +1,12 @@
 package org.codenot.ssa.service.background;
 
 import lombok.extern.slf4j.Slf4j;
+import org.codenot.ssa.config.RabbitMQConfig;
 import org.codenot.ssa.domain.constant.OperationalStatus;
+import org.codenot.ssa.dto.OrbitUpdateMessage;
 import org.codenot.ssa.repository.SpaceObjectRepository;
 import org.codenot.ssa.service.AssessmentService;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -83,6 +86,12 @@ public class RoutineScreeningScheduler {
         }));
 
         log.info("Completed routine screening sync: {} assessments submitted successfully", totalAssessments);
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.ORBIT_UPDATE_QUEUE)
+    public void handleOrbitUpdate(OrbitUpdateMessage msg) {
+        log.info("Received orbit update message: {}", msg);
+        submitRoutineScreeningSync();
     }
 
     private void submitRoutineScreeningAsync() {
