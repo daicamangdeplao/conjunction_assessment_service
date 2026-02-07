@@ -1,3 +1,5 @@
+create extension if not exists vector;
+
 DROP TABLE IF EXISTS space_object;
 drop table if exists conjunction_assessment;
 
@@ -62,3 +64,15 @@ CREATE INDEX IF NOT EXISTS idx_conjunction_assessment_primary_object_id_secondar
 
 alter sequence conjunction_assessment_id_seq restart with 1;
 alter sequence space_object_id_seq restart with 1;
+
+-- LLM Integration
+create table conjunction_report (
+    id bigint generated always as identity primary key,
+    object_a_id bigint not null,
+    object_b_id bigint not null,
+    report_text text not null,
+    embedding vector(1536),
+    created_at timestamp default now()
+)
+
+create index if not exists on conjunction_report using ivfflat (embedding vector_12_ops) with (lists = 100);
