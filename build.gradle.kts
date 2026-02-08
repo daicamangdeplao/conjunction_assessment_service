@@ -28,6 +28,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-amqp")
+    implementation("org.hibernate.orm:hibernate-vector:6.4.4.Final")
+
+    implementation("dev.langchain4j:langchain4j-core:1.11.0")
+    // Anthropic (Claude) integration
+    implementation("dev.langchain4j:langchain4j-anthropic:1.11.0")
+    implementation("dev.langchain4j:langchain4j-anthropic-spring-boot-starter:1.6.0-beta12")
 
     compileOnly("org.projectlombok:lombok")
     runtimeOnly("org.postgresql:postgresql")
