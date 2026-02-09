@@ -11,13 +11,13 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -41,10 +41,16 @@ public class RoutineScreeningScheduler {
     // Furthermore, the fixRate is also needed to be parameterized that allows us to run the service whenever we want!
     @Scheduled(fixedRate = 5000)
     @Profile("!dev")
-    public void submitRoutineScreening() {
+    public void recalculateConjunctionAssessmentAsync() {
         Map<Long, List<Long>> screeningPairs = constructScreeningPairs();
-
-        // Log should come here
+        // intent - destination - outcome
+        Instant start = Instant.now();
+        int batchSize = screeningPairs.size();
+        log.info(
+                "[Scheduler][ConjunctionAssessment] Started – batchSize={}, timeStepInMinute={}",
+                batchSize,
+                timeStepInMinute
+        );
 
         screeningPairs.entrySet().parallelStream().forEach(entry -> {
             Long primary = entry.getKey();
@@ -62,11 +68,15 @@ public class RoutineScreeningScheduler {
                     });
         });
 
-        // Log should come here
-
+        Duration duration = Duration.between(start, Instant.now());
+        log.info(
+                "[Scheduler][ConjunctionAssessment] Finished – duration={}s, batchSize={}",
+                duration.getSeconds(),
+                batchSize
+        );
     }
 
-    public void submitRoutineScreeningSync() {
+    public void recalculateConjunctionAssessmentSync() {
         Map<Long, List<Long>> screeningPairs = constructScreeningPairs();
 
         int totalAssessments = screeningPairs.values().stream().mapToInt(List::size).sum();
@@ -89,12 +99,9 @@ public class RoutineScreeningScheduler {
     }
 
     @RabbitListener(queues = RabbitMQConfig.ORBIT_UPDATE_QUEUE)
-    public void handleOrbitUpdate(OrbitUpdateMessage msg) {
+    public void onOrbitUpdate(OrbitUpdateMessage msg) {
         log.info("Received orbit update message: {}", msg);
-        submitRoutineScreeningSync();
-    }
-
-    private void submitRoutineScreeningAsync() {
+        recalculateConjunctionAssessmentSync();
     }
 
     private Map<Long, List<Long>> constructScreeningPairs() {
